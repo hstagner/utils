@@ -22,6 +22,8 @@ PAGE_BOTTOM_MARGIN = 1 * inch
 CARD_WIDTH = 5 * inch
 CARD_HEIGHT = 3 * inch
 CARD_MARGIN = 12  # 12pt = 1/6" margin on all sides
+TITLE_MARGIN = 0
+TITLE_WIDTH = CARD_WIDTH
 CONTENT_WIDTH = CARD_WIDTH - 2*CARD_MARGIN
 CONTENT_HEIGHT = CARD_HEIGHT - 2*CARD_MARGIN
 
@@ -62,13 +64,25 @@ def auto_scale_text(text, max_width, max_height):
     return MIN_FONT_SIZE, '<br/>'.join(wrapped)
 
 def fit_title_font(title, max_width):
-    font_size = MAX_TITLE_SIZE
-    while font_size >= MIN_FONT_SIZE:
-        text_width = pdfmetrics.stringWidth(title, TITLE_FONT_NAME, font_size)
-        if text_width <= max_width:
+    styles = getSampleStyleSheet()
+    for font_size in range(MAX_TITLE_SIZE, MIN_FONT_SIZE-1, -1):
+        title_style = ParagraphStyle(
+            'TempTitleStyle',
+            parent=styles['Normal'],
+            fontName=TITLE_FONT_NAME,
+            fontSize=font_size,
+            leading=font_size * LINE_SPACING,
+            alignment=1
+        )
+        para = Paragraph(f"<b>{title}</b>", title_style)
+        w, h = para.wrap(max_width, 1000)
+        min_w = para.minWidth()
+        # Must fit in one line and not overflow horizontally
+        if h <= title_style.leading + 1 and min_w <= max_width:
             return font_size
-        font_size -= 1
     return MIN_FONT_SIZE
+
+
 
 def calculate_footer_font(source_text, page_text):
     """Calculate maximum font size that fits both footer columns"""
@@ -132,14 +146,15 @@ def create_card_content(card_title, quote, analysis, source, page_number):
         spaceAfter=0
     )
 
-    # Title with red line
+    # Title with red line (full width)
     title_table = Table(
         [[Paragraph(f"<b>{card_title}</b>", title_style)]],
-        colWidths=CONTENT_WIDTH,
-        rowHeights=[title_height-2],
+        colWidths=CARD_WIDTH,  # Use full card width
+        rowHeights=[title_height],
         style=TableStyle([
-            ('LINEBELOW', (0,0), (-1,0), 1.5, colors.red),
-            ('BOTTOMPADDING', (0,0), (-1,0), 6)
+            ('BOTTOMPADDING', (0,0), (-1,0), 6),
+            ('LEFTPADDING', (0,0), (-1,-1), 0),
+            ('RIGHTPADDING', (0,0), (-1,-1), 0)
         ])
     )
 
@@ -174,26 +189,32 @@ def create_card_content(card_title, quote, analysis, source, page_number):
             ('RIGHTPADDING', (0,0), (-1,-1), 0),
         ])
     )
-
+    
     return Table(
-        [
-            [title_table],
-            [Spacer(1, 12)],
-            [para_table],
-            [footer_table]
-        ],
-        colWidths=CARD_WIDTH,
-        rowHeights=[
-            title_height,
-            12,  # Spacer
-            para_available_height,
-            FOOTER_HEIGHT
-        ],
-        style=TableStyle([
-            ('PADDING', (0,0), (-1,-1), CARD_MARGIN),
-            ('BOTTOMPADDING', (-1,-1), (-1,-1), CARD_MARGIN)
-        ])
-    )
+    [
+        [title_table],
+        [Spacer(1, 12)],
+        [para_table],
+        [footer_table]
+    ],
+    colWidths=CARD_WIDTH,
+    rowHeights=[
+        title_height,
+        12,  # Spacer
+        para_available_height,
+        FOOTER_HEIGHT
+    ],
+    style=TableStyle([
+        # Title table style (no padding)
+        ('PADDING', (0,0), (-1,0), 0),  # First row (title)
+        ('LINEBELOW', (0,0), (-1,0), 1.5, colors.red),  # Red line under title
+        
+        # Content area style (12pt padding)
+        ('PADDING', (0,1), (-1,-2), CARD_MARGIN),  # Middle rows (paragraph)
+        ('BOTTOMPADDING', (-1,-1), (-1,-1), CARD_MARGIN)  # Footer
+    ])
+)
+
 
 def parse_markdown(filename):
     analyzer = MarkdownAnalyzer(filename)

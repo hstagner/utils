@@ -279,7 +279,7 @@ def make_avery5388_pdf(md_dir, output_file):
     doc.build(elements)
 
 if __name__ == "__main__":
-    input_directory = "/Users/hstagner/Documents/dev/bear-export/"
+    input_directory = "/Users/hstagner/Documents/dev/index_export"
     output_file = "avery_5388_cards.pdf"
     make_avery5388_pdf(input_directory, output_file)
     print(f"Generated {output_file} with full auto-scaling text and footer.")

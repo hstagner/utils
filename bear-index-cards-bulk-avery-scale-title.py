@@ -280,6 +280,6 @@ def make_avery5388_pdf(md_dir, output_file):
 
 if __name__ == "__main__":
     input_directory = "/Users/hstagner/Documents/dev/index_export"
-    output_file = "avery_5388_cards.pdf"
+    output_file = "/Users/hstagner/Documents/dev/index_export/avery_5388_cards.pdf"
     make_avery5388_pdf(input_directory, output_file)
     print(f"Generated {output_file} with full auto-scaling text and footer.")
